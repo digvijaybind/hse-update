@@ -1,0 +1,128 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+
+
+enum AnnualIncomeRange {
+
+  ZeroToTwoFiftyThousandINR
+  TwoFiftyThousandOneToFiveHundredThousandINR
+  FiveHundredThousandOneToHundredThousandINR
+  MoreThanHundredThousandINR
+
+}
+
+enum Role{
+  ADMIN
+  INVESTOR
+}
+
+
+model Investor {
+  id                         String            @id @default(auto()) @map("_id") @db.ObjectId
+  fullName                   String
+  emailId                    String            @unique
+  mobileNumber               String            @unique
+  dateofBirth                DateTime          @db.Date
+  password                   String?
+  emailVerified              Boolean           @default(false)
+  phoneNumberVerified        Boolean           @default(false)
+  selfieImagePath            String?
+  addressImagePath           String?
+  employmentImagePath        String?
+  additionalDocumentImagePath String?
+  industry                   String?
+  organization               String?
+  roleAtWork                 String?
+  workingDuration            String?
+  incomeRange                AnnualIncomeRange?
+  profileUserImagePath       String?
+  investmentPreference       String?
+  addressOne                 String?
+  addressTwo                 String?
+  addressThree               String?
+  pinCode                    String?
+  state                      String?
+  city                       String?
+  accountDeactivate          Boolean           @default(false)
+  receiveNotification        Boolean           @default(true)
+  payMentMethod              String            @default("cards")
+  role                       Role
+  fundsAvailable             String            @default("200")
+  properties                 PropertyInvestor[]
+  bookmarks                 Bookmark[]
+ expoPushToken              String? // New field for Expo push token
+}
+
+
+
+model Admin {
+  id           String    @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt    DateTime  @default(now())
+  name         String
+  email        String    @unique
+  password     String
+  role         Role
+}
+
+model Property {
+  id                        String     @id @default(auto()) @map("_id") @db.ObjectId
+  propertyName              String
+  propertyLocation          String
+  propertyImagePath         String
+  propertyVideoPath         String?
+  totalAssetValue           String
+  totalAssetValueLeft       String
+  totalToken                String
+  ageGrowth                 Float             @default(0.0)
+  lockPeriod                String            @default("2 Years")
+  createdAt                 DateTime          @default(now())
+  updatedAt                 DateTime          @default(now())
+  amountInvestedByMe        Float             @default(0.0)
+  aboutTotalAssetValue      String
+  myTokenOnProperty         Float             @default(0.0)
+  tokenLeft                 String
+  sharedType                String
+  aboutSharedType           String
+  holdingCompany            String
+  aboutHoldingCompany       String
+  aboutProperty             String
+  propertyAmmenitiesImagePath String
+  titleDeedDocumentPath     String
+  floorLayoutDocumentPath   String
+  companyDetailsDocumentPath String
+  ownerShipDocumentPath     String
+  otherDocumenthPath        String?
+  faqs                      String
+  investors                 PropertyInvestor[]
+  bookmarks                  Bookmark[]
+}
+
+model PropertyInvestor {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  investorId String   @db.ObjectId
+  propertyId String   @db.ObjectId
+  investor   Investor @relation(fields: [investorId], references: [id])
+  property   Property @relation(fields: [propertyId], references: [id])
+}
+
+
+model Bookmark {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  investorId String   @db.ObjectId
+  propertyId String   @db.ObjectId
+  createdAt  DateTime @default(now())
+  investor   Investor @relation(fields: [investorId], references: [id])
+  property   Property @relation(fields: [propertyId], references: [id])
+}
+
+
