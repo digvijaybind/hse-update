@@ -2,7 +2,7 @@ const { PrismaClient, Role } = require('@prisma/client');
 const asyncHandler = require('express-async-handler');
 const { superBase } = require('../../config/supabse');
 const path = require('path');
-const { generateToken } = require('../../config/jwtToken');
+const { generateAccessToken } = require('../../config/jwtToken');
 const argon = require('argon2');
 const prisma = new PrismaClient();
 const multer = require('multer');
@@ -83,8 +83,8 @@ const createAdmin = asyncHandler(async (req, res) => {
 });
 
 const loginAdmin = asyncHandler(async (req, res) => {
+  let { email, password } = req.body;
   try {
-    let { email, password } = req.body;
     email = email.trim();
     password = password.trim();
     if (email == '' || password == '') {
@@ -111,13 +111,16 @@ const loginAdmin = asyncHandler(async (req, res) => {
           password: findAdminByEmail?.password,
           name: findAdminByEmail?.name,
           role: findAdminByEmail.role,
-          token: generateToken(findAdminByEmail?.id),
+          token: generateAccessToken(findAdminByEmail?.id),
         });
+        return;
       } else {
+        // console.log("error invCred");
         throw new Error('Invalid Credentials');
       }
     }
   } catch (error) {
+    console.log(error, "error here");
     return res.status(500).json({ error: error });
   }
 });
