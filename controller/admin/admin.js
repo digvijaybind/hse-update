@@ -31,6 +31,11 @@ const upload = multer({ storage: storage }).fields(
 const createAdmin = asyncHandler(async (req, res) => {
   try {
     let { name, email, password } = req.body;
+
+    if ( !name || email || password) {
+      return res.status(400).json({ msg: "All fields are required!"});
+    }
+
     name = name.trim();
     email = email.trim();
 
@@ -88,7 +93,7 @@ const loginAdmin = asyncHandler(async (req, res) => {
   if (!email || !password) {
     return res.status(400).json({ msg: "All fields are required!"});
   }
-  
+
   try {
     email = email.trim();
     password = password.trim();
