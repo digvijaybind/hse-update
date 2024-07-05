@@ -115,12 +115,10 @@ const loginAdmin = asyncHandler(async (req, res) => {
         });
         return;
       } else {
-        // console.log("error invCred");
         throw new Error('Invalid Credentials');
       }
     }
   } catch (error) {
-    console.log(error, "error here");
     return res.status(500).json({ error: error });
   }
 });
@@ -256,7 +254,7 @@ const createProperty = asyncHandler(async (req, res) => {
               propertyVideoPath: imageUrls.propertyVideoPath,
             }),
             ...(req.files.otherDocumentPath && {
-              otherDocumenthPath: imageUrls.otherDocumentPath,
+              otherDocumentPath: imageUrls.otherDocumentPath,
             }), 
           },
         });
