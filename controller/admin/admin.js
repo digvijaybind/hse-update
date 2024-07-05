@@ -134,7 +134,7 @@ const createProperty = asyncHandler(async (req, res) => {
       }
 
       // Check if req.file contains the uploaded file information
-      console.log(req.file);
+      // console.log(req.files);
       let {
         propertyName,
         propertyLocation,
@@ -182,7 +182,12 @@ const createProperty = asyncHandler(async (req, res) => {
 
         const imageUrls = {};
 
+        if (!req.files) {
+          return res.status(400).json({ error: "Please upload all required documents"})
+        }
+        
         for (const imageType of imageTypes) {
+
           if (req.files[imageType]) {
             const imageFile = req.files[imageType][0];
             const imageBuffer = imageFile.buffer;
@@ -251,8 +256,8 @@ const createProperty = asyncHandler(async (req, res) => {
               propertyVideoPath: imageUrls.propertyVideoPath,
             }),
             ...(req.files.otherDocumentPath && {
-              otherDocumentPath: imageUrls.otherDocumentPath,
-            }),
+              otherDocumenthPath: imageUrls.otherDocumentPath,
+            }), 
           },
         });
         res.json({
