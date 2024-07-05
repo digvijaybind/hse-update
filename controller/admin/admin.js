@@ -84,6 +84,11 @@ const createAdmin = asyncHandler(async (req, res) => {
 
 const loginAdmin = asyncHandler(async (req, res) => {
   let { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ msg: "All fields are required!"});
+  }
+  
   try {
     email = email.trim();
     password = password.trim();
