@@ -1,5 +1,5 @@
-const isPasswordValid = async (password) => {
-  return await (password.length <= 6);
+const isPasswordValid = (password) => {
+  return (password.length <= 6);
 };
 
 module.exports = { isPasswordValid };
