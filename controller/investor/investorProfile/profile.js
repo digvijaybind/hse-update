@@ -271,7 +271,7 @@ const TurnOnNotificationInvestorSettings = asyncHandler(async (req, res) => {
 
 const getProfileDetails = asyncHandler(async (req, res) => {
   try {
-    const { id } = req.investor;
+    const { id } = req.investor; 
 
     const getSingleTeamMember = await prisma.Investor.findUnique({
       where: {
