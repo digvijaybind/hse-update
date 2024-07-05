@@ -101,7 +101,7 @@ model Property {
   floorLayoutDocumentPath   String
   companyDetailsDocumentPath String
   ownerShipDocumentPath     String
-  otherDocumenthPath        String?
+  otherDocumentPath        String?
   faqs                      String
   investors                 PropertyInvestor[]
   bookmarks                  Bookmark[]
