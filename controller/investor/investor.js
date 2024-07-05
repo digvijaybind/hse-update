@@ -32,71 +32,106 @@ const createInvestor = asyncHandler(async (req, res) => {
     mobileNumber = mobileNumber.trim();
     dateofBirth = dateofBirth.trim();
     emailId = emailId.trim();
+
+    if (
+      !fullName ||
+      !mobileNumber ||
+      !dateofBirth ||
+      !emailId
+    ) {
+      return res.json({
+        success: false,
+        msg: 'All fields are required!',
+      });
+    }
+
     if (
       fullName == '' ||
       mobileNumber == '' ||
       dateofBirth == '' ||
       emailId == ''
     ) {
-      res.json({
+      return res.json({
         success: false,
         msg: 'Empty Input Fields!',
       });
-    } else if (!isValidEmail(emailId)) {
-      res.json({
+    }
+    
+    if (!isValidEmail(emailId)) {
+      return res.json({
         success: false,
         msg: 'Invalid emailId entered',
       });
-    } else if (!isValidMobileNumber(mobileNumber)) {
-      res.json({
+    } 
+    
+    if (!isValidMobileNumber(mobileNumber)) {
+      return res.json({
         success: false,
         msg: 'Invalid phoneNumber must include country code i.e 2349050779526',
       });
-    } else if (!isDateValid(dateofBirth)) {
-      res.json({
+    }
+    
+    if (!isDateValid(dateofBirth)) {
+      return res.json({
         success: false,
         msg: 'Invalid dateofBirth entered',
       });
-    } else {
-      const findInvestor = await prisma.Investor.findUnique({
-        where: {
-          emailId,
+    } 
+    
+    const existingInvestorMobileNumber = await prisma.Investor.findUnique({
+      where: { mobileNumber: mobileNumber },
+    });
+
+    if (existingInvestorMobileNumber) {
+      return res.status(400).json({ error: 'Investor with this mobile number already exists.' });
+    }
+    const findInvestor = await prisma.Investor.findUnique({
+      where: {
+        emailId,
+      },
+    });
+    if (findInvestor === null) {
+      // create a new Investor
+      const Investor = await prisma.Investor.create({
+        data: {
+          fullName: fullName,
+          mobileNumber: mobileNumber,
+          dateofBirth: new Date(dateofBirth),
+          emailId: emailId,
+          role: Role.INVESTOR,
         },
       });
-      if (findInvestor === null) {
-        // create a new Investor
-        const Investor = await prisma.Investor.create({
-          data: {
-            fullName: fullName,
-            mobileNumber: mobileNumber,
-            dateofBirth: dateofBirth,
-            emailId: emailId,
-            role: Role.INVESTOR,
-          },
-        });
-        const otpResponse = await SendchampService.sendEmailOTP({
-          meta_data: 'test_meta',
-          channel: 'email',
-          sender: 'Sendchamp',
-          token_type: 'numeric',
-          token_length: 6,
-          expiration_time: 5,
-          customer_email_address: emailId,
-        });
-        console.log('OTP Response:', otpResponse);
+    console.log("below here");
+      console.log({Investor});
+      
+      const otpResponse = await SendchampService.sendEmailOTP({
+        meta_data: 'test_meta',
+        channel: 'email',
+        sender: 'Sendchamp',
+        token_type: 'numeric',
+        token_length: 6,
+        expiration_time: 5,
+        customer_email_address: emailId,
+      });
+      console.log('OTP Response:', otpResponse);
         // Save OTP reference in Redis
         await OTPService.storeEmailIdOTP(otpResponse.data.data.reference);
 
-        res.json({ Investor: Investor, SendChampResponse: otpResponse });
+        return res.json({ Investor: Investor, SendChampResponse: otpResponse });
       } else {
-        res.json({
-          msg: 'Investor Already Exists',
-          success: false,
-        });
-      }
+      return res.json({
+        msg: 'Investor Already Exists',
+        success: false, 
+      });
     }
   } catch (error) {
-    res.status(500).json({ error: 'request failed', msg: error });
+    if (error.name === 'PrismaClientValidationError') {
+      console.error('Validation Error:', error.message);
+      console.error('Details:', error.meta); // This may provide more details about the validation issue
+    } else {
+      console.error('Error creating record:', error);
+    }
+    // res.status(500).json({ error: 'request failed', msg: error });
   }
 });
 
