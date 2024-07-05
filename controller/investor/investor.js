@@ -370,21 +370,31 @@ const refreshToken = asyncHandler(async (req, res) => {
   const { token } = req.body;
 
   if (!token) return res.sendStatus(401);
+  console.log({refreshTokens});
   if (!refreshTokens.includes(token)) return res.sendStatus(403);
 
   jwt.verify(token, process.env.REFRESH_TOKEN_SECRET, (err, decoded) => {
     if (err) return res.sendStatus(403);
 
     const accessToken = generateAccessToken(decoded?.id);
-    console.log('This is acccess Token 370', accessToken);
+    // console.log('This is acccess Token 370', accessToken);
     res.json({ accessToken });
   });
 });
 
+console.log(refreshTokens);
+
 const logOut = asyncHandler(async (req, res) => {
   const { token } = req.body;
+
+  if (!token) {
+    return res.status(400).json({ msg: "Token is required to log out." });
+  }
+
+  console.log({refreshTokens}, "1");
   refreshTokens = refreshTokens.filter((rt) => rt !== token);
-  res.sendStatus(204);
+  console.log({refreshTokens}, "2");
+  res.status(200).json({ msg: "Logged out successfully."});
 });
 //Kyc
 //KYC Selfie Uploading
@@ -571,6 +581,7 @@ const sendPhoneNumberOtp = asyncHandler(async (req, res) => {
 
 const sendEmailAddressOtp = asyncHandler(async (req, res) => {
   const emailId = req.investor.emailId;
+
   try {
     const otpResponse = await SendchampService.sendEmailOTP({
       meta_data: 'test_meta',
@@ -581,7 +592,7 @@ const sendEmailAddressOtp = asyncHandler(async (req, res) => {
       expiration_time: 5,
       customer_email_address: emailId,
     });
-    console.log('OTP Response:', otpResponse);
+    // console.log('OTP Response:', otpResponse);
     await OTPService.storeEmailIdOTP(otpResponse.data.data.reference);
     res.json({ SendChampResponse: otpResponse });
   } catch (error) {
@@ -635,6 +646,7 @@ module.exports = {
   createInvestor,
   setPassword,
   loginInvestor,
+  logOut,
   updateInvestorEmploymentKyc,
   updateInvestorAnnualIncomeKyc,
   uploadSelfieKyc,
