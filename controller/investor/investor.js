@@ -441,6 +441,11 @@ const uploadSelfieKyc = asyncHandler(async (req, res) => {
           msg: 'selfieImagePath Already Uploaded',
         });
       } else if (findInvestorWithAssociatedSelfie.selfieImagePath === null) {
+
+        if (!req.file) {
+          return res.status(400).json({ error: "Please upload all required documents"})
+        }
+
         try {
           const imageBuffer = req.file.buffer; // Get the image buffer
           const imageContentType = req.file.mimetype; // Get the image content type
@@ -520,6 +525,11 @@ const addressKyc = asyncHandler(async (req, res) => {
           msg: 'addressImagePath Already Uploaded',
         });
       } else if ((findInvestorWithAssociatedAddress.addressImagePath === null)) {
+
+        if (!req.files) {
+          return res.status(400).json({ error: "Please upload all required documents"})
+        }
+        
         try {
           const imageBuffer = req.file.buffer; // Get the image buffer
           const imageContentType = req.file.mimetype; // Get the image content type
