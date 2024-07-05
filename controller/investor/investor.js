@@ -77,7 +77,7 @@ const createInvestor = asyncHandler(async (req, res) => {
         msg: 'Invalid dateofBirth entered',
       });
     } 
-    
+
     const existingInvestorMobileNumber = await prisma.Investor.findUnique({
       where: { mobileNumber: mobileNumber },
     });
@@ -101,8 +101,6 @@ const createInvestor = asyncHandler(async (req, res) => {
           role: Role.INVESTOR,
         },
       });
-    console.log("below here");
-      console.log({Investor});
       
       const otpResponse = await SendchampService.sendEmailOTP({
         meta_data: 'test_meta',
@@ -113,9 +111,10 @@ const createInvestor = asyncHandler(async (req, res) => {
         expiration_time: 5,
         customer_email_address: emailId,
       });
+
       console.log('OTP Response:', otpResponse);
-        // Save OTP reference in Redis
-        await OTPService.storeEmailIdOTP(otpResponse.data.data.reference);
+      // Save OTP reference in Redis
+      await OTPService.storeEmailIdOTP(otpResponse.data.data.reference);
 
         return res.json({ Investor: Investor, SendChampResponse: otpResponse });
       } else {
