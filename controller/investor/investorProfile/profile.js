@@ -136,9 +136,15 @@ const changeInvestorPassword = asyncHandler(async (req, res) => {
   try {
     const { id } = req.investor;
     let { formerPassword, newPassword, confirmNewPassword } = req.body;
+
+    if (!formerPassword || !newPassword || !confirmNewPassword) {
+      return res.status(400).json({ msg: "All fields are required!"});
+    }
+
     formerPassword = formerPassword.trim();
     newPassword = newPassword.trim();
     confirmNewPassword = confirmNewPassword.trim();
+
     if (formerPassword == '' || newPassword == '' || confirmNewPassword == '') {
       res.json({
         success: false,
@@ -169,9 +175,9 @@ const changeInvestorPassword = asyncHandler(async (req, res) => {
       if (!pwMatches) {
         res.json({
           success: false,
-          msg: 'formerPassword those not exist try to reset formerPassword before trying to change Password',
+          msg: 'formerPassword does not exist try to reset formerPassword before trying to change Password',
         });
-      } else if (newPassword != confirmNewPassword) {
+      } else if (newPassword !== confirmNewPassword) {
         res.json({
           success: false,
           msg: 'newPassword didnt match confirmNewPassword',
