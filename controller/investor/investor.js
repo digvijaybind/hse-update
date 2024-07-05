@@ -236,17 +236,28 @@ const setPassword = asyncHandler(async (req, res) => {
 const updateInvestorEmploymentKyc = asyncHandler(async (req, res) => {
   const { id } = req.investor;
   let { industry, organization, roleAtWork, workingDuration } = req.body;
+
+  if ( 
+    !industry 
+    || !organization
+    || !roleAtWork 
+    || !workingDuration 
+  ) {
+    return res.status(400).json({ msg: "All fields are required!"})
+  }
+
   industry = industry.trim();
   organization = organization.trim();
   roleAtWork = roleAtWork.trim();
   workingDuration = workingDuration.trim();
+
   if (
     industry == '' ||
     organization == '' ||
     roleAtWork == '' ||
     workingDuration == ''
   ) {
-    res.json({
+    return res.json({
       success: false,
       msg: 'Empty Input Fields!',
     });
@@ -264,7 +275,7 @@ const updateInvestorEmploymentKyc = asyncHandler(async (req, res) => {
             workingDuration,
           },
         });
-      res.json(InvestorsWithUpdatedEmploymentDetails);
+      return res.json(InvestorsWithUpdatedEmploymentDetails);
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'request failed', msg: error });
@@ -641,6 +652,18 @@ const verifyMobileNumberOtp = asyncHandler(async (req, res) => {
       verification_reference,
       verification_code,
     });
+
+    if (verificationResponse.status === "success") {
+      await prisma.Investor.update({
+        where: {
+          mobileNumber
+        },
+        data: {
+          phoneNumberVerified: true
+        }
+      });
+    }
+
     res.json({ VerificationResponse: verificationResponse });
   } catch (error) {
     console.log('error 619', error);
