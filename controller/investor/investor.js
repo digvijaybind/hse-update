@@ -398,8 +398,6 @@ const refreshToken = asyncHandler(async (req, res) => {
   });
 });
 
-console.log(refreshTokens);
-
 const logOut = asyncHandler(async (req, res) => {
   const { token } = req.body;
 
@@ -424,7 +422,7 @@ const uploadSelfieKyc = asyncHandler(async (req, res) => {
       }
 
       // Check if req.file contains the uploaded file information
-      console.log(req.file);
+      // console.log(req.file);
       const { id } = req.investor;
 
       // }
@@ -437,7 +435,7 @@ const uploadSelfieKyc = asyncHandler(async (req, res) => {
       );
 
       if (findInvestorWithAssociatedSelfie.selfieImagePath != null) {
-        res.json({
+        return res.json({
           msg: 'selfieImagePath Already Uploaded',
         });
       } else if (findInvestorWithAssociatedSelfie.selfieImagePath === null) {
@@ -460,7 +458,7 @@ const uploadSelfieKyc = asyncHandler(async (req, res) => {
             return res.status(500).json({ error: 'File upload failed' });
           }
           const imageUrlPath = data.path;
-          console.log(imageUrlPath);
+          // console.log(imageUrlPath);
 
           if (!imageUrlPath) {
             return res.status(500).json({ error: 'File upload failed' });
@@ -470,7 +468,7 @@ const uploadSelfieKyc = asyncHandler(async (req, res) => {
             .from('gallery')
             .getPublicUrl(imageUrlPath);
 
-          console.log(imageUrl);
+          // console.log(imageUrl);
           const InvestorWithUploadedSelfie = await prisma.Investor.update({
             where: {
               id,
