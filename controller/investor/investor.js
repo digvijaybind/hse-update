@@ -278,9 +278,14 @@ const updateInvestorAnnualIncomeKyc = asyncHandler(async (req, res) => {
   try {
     const { id } = req.investor;
     let { incomeRange } = req.body;
+
+    if (!incomeRange) {
+      return res.status(400).json({ msg: "Income Range is required!"})
+    }
+
     incomeRange = incomeRange.trim();
     if (incomeRange == '') {
-      res.json({
+      return res.json({
         success: false,
         msg: 'Empty Input Fields!',
       });
@@ -293,7 +298,7 @@ const updateInvestorAnnualIncomeKyc = asyncHandler(async (req, res) => {
           incomeRange,
         },
       });
-      res.json(InvestorsWithUpdatedAnnualIncome);
+      return res.json(InvestorsWithUpdatedAnnualIncome);
     }
   } catch (error) {
     console.error(error);
