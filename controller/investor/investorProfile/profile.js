@@ -5,49 +5,73 @@ const { isDateValid } = require('../../../utils/regexs/dateRegex');
 const { isPasswordValid } = require('../../../utils/regexs/passwordRegex');
 const prisma = new PrismaClient();
 const argon = require('argon2');
+const { isValidMobileNumber } = require('../../../utils/regexs/phoneNumberRegex');
 
 const updateInvestorPersonalProfile = asyncHandler(async (req, res) => {
   try {
     const { id } = req.investor;
     let { emailId, mobileNumber, dateofBirth, investmentPreference } = req.body;
+
+    if (
+      !emailId
+      || !mobileNumber 
+      || !dateofBirth 
+      || !investmentPreference 
+    ) {
+      return res.status(400).json({ msg: "All fields are required!"});
+    }
+
     emailId = emailId.trim();
     mobileNumber = mobileNumber.trim();
     dateofBirth = dateofBirth.trim();
     investmentPreference = investmentPreference.trim();
+
     if (
       emailId == '' ||
       mobileNumber == '' ||
       dateofBirth == '' ||
       investmentPreference == ''
     ) {
-      res.json({
+      return res.json({
         success: false,
         msg: 'Empty Input Fields!',
       });
-    } else if (!isValidEmail(emailId)) {
-      res.json({
+    }
+    
+    if (!isValidEmail(emailId)) {
+      return res.json({
         success: false,
         msg: 'Invalid email entered',
       });
-    } else if (!isDateValid(dateofBirth)) {
-      res.json({
+    }
+    
+    if (!isValidMobileNumber(mobileNumber)) {
+      return res.json({
+        success: false,
+        msg: 'Invalid mobile number entered',
+      });
+    }
+    
+    if (!isDateValid(dateofBirth)) {
+      return res.json({
         success: false,
         msg: 'Invalid dateofBirth entered',
       });
-    } else {
-      const InvestorsIdToken = await prisma.Investor.update({
-        where: {
-          id,
-        },
-        data: {
-          emailId,
-          mobileNumber,
-          dateofBirth,
-          investmentPreference,
-        },
-      });
-      res.json(InvestorsIdToken);
     }
+
+    const InvestorsIdToken = await prisma.Investor.update({
+      where: {
+        id,
+      },
+      data: {
+        emailId,
+        mobileNumber,
+        dateofBirth: new Date(dateofBirth),
+        investmentPreference,
+      },
+    });
+    return res.json(InvestorsIdToken);
+    
   } catch (error) {
     return res.status(500).json({ error: error });
   }
@@ -58,6 +82,17 @@ const updateInvestorAddressProfileInfo = asyncHandler(async (req, res) => {
     const { id } = req.investor;
     let { addressOne, addressTwo, addressThree, pinCode, state, city } =
       req.body;
+
+    if (
+      !addressOne 
+      || !addressTwo 
+      || !addressThree 
+      || !pinCode 
+      || !state 
+      || !city 
+    ) {
+      return res.status(400).json({ msg: "All fields are required!"});
+    }
     addressOne = addressOne.trim();
     addressTwo = addressTwo.trim();
     addressThree = addressThree.trim();
@@ -80,7 +115,7 @@ const updateInvestorAddressProfileInfo = asyncHandler(async (req, res) => {
       const InvestorsIdToken = await prisma.Investor.update({
         where: {
           id,
-        },
+        }, 
         data: {
           addressOne,
           addressTwo,
