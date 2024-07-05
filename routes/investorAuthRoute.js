@@ -18,6 +18,7 @@ const {
   sendEmailAddressOtp,
   verifyEmailAddressOtp,
   verifyMobileNumberOtp,
+  logOut,
 } = require('../controller/investor/investor');
 const {
   updateInvestorPersonalProfile,
@@ -44,6 +45,7 @@ const {
 router.post('/investor/SignUp', createInvestor);
 router.post('/investor/SetPassword', setPassword);
 router.post('/investor/SignIn', loginInvestor);
+router.post('/investor/SignOut', logOut)
 router.post('/investor/refreshToken', refreshToken);
 router.post(
   '/investor/sendEmailAddressOtp',
