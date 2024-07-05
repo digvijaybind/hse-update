@@ -113,7 +113,7 @@ const createInvestor = asyncHandler(async (req, res) => {
         customer_email_address: emailId,
       });
 
-      console.log('OTP Response:', otpResponse);
+      // console.log('OTP Response:', otpResponse);
       // Save OTP reference in Redis
       await OTPService.storeEmailIdOTP(otpResponse.data.data.reference);
 
@@ -127,11 +127,11 @@ const createInvestor = asyncHandler(async (req, res) => {
   } catch (error) {
     if (error.name === 'PrismaClientValidationError') {
       console.error('Validation Error:', error.message);
-      console.error('Details:', error.meta); // This may provide more details about the validation issue
+      console.error('Details:', error.meta);
     } else {
       console.error('Error creating record:', error);
     }
-    // res.status(500).json({ error: 'request failed', msg: error });
+    res.status(500).json({ error: 'request failed', msg: error });
   }
 });
 
