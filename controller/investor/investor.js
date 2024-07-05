@@ -28,11 +28,7 @@ const upload = multer({ storage: storage }).single('selfieImagePath');
 const createInvestor = asyncHandler(async (req, res) => {
   try {
     let { fullName, mobileNumber, dateofBirth, emailId } = req.body;
-    fullName = fullName.trim();
-    mobileNumber = mobileNumber.trim();
-    dateofBirth = dateofBirth.trim();
-    emailId = emailId.trim();
-
+    
     if (
       !fullName ||
       !mobileNumber ||
@@ -56,6 +52,11 @@ const createInvestor = asyncHandler(async (req, res) => {
         msg: 'Empty Input Fields!',
       });
     }
+
+    fullName = fullName.trim();
+    mobileNumber = mobileNumber.trim();
+    dateofBirth = dateofBirth.trim();
+    emailId = emailId.trim();    
     
     if (!isValidEmail(emailId)) {
       return res.json({
