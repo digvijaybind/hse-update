@@ -85,7 +85,7 @@ router.post(
 router.post(
   '/investor/UpdateInvestorAddressKyc',
   InvestorAuthMiddleware,
-  uploadSelfieKyc
+  addressKyc
 );
 router.post(
   '/investor/personalProfile',
