@@ -631,6 +631,18 @@ const verifyEmailAddressOtp = asyncHandler(async (req, res) => {
       verification_reference,
       verification_code,
     });
+
+    if (verificationResponse.status === "success") {
+      await prisma.Investor.update({
+        where: {
+          emailId
+        },
+        data: {
+          emailVerified: true
+        }
+      });
+    }
+
     res.json({ VerificationResponse: verificationResponse });
   } catch (error) {
     console.log('error 619', error);
