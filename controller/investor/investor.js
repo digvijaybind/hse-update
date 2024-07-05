@@ -138,35 +138,52 @@ const createInvestor = asyncHandler(async (req, res) => {
 //Update InvestorPasswordWith Password
 const setPassword = asyncHandler(async (req, res) => {
   let { emailId, password, confirmPassword } = req.body;
-  emailId = emailId.trim();
-  password = password.trim();
-  confirmPassword = confirmPassword.trim();
+
+  if (!emailId || !password || !confirmPassword) {
+    return res.json({
+      success: false,
+      msg: 'All fields are required!',
+    });
+  }
+
   if (emailId == '' || password == '' || confirmPassword == '') {
-    res.json({
+    return res.json({
       success: false,
       msg: 'Empty Input Fields!',
     });
-  } else if (!isValidEmail(emailId)) {
-    res.json({
+  }  
+
+  emailId = emailId.trim();
+  password = password.trim();
+  confirmPassword = confirmPassword.trim();
+  
+  if (!isValidEmail(emailId)) {
+    return res.json({
       success: false,
       msg: 'Invalid email entered',
     });
-  } else if (!isPasswordValid(password)) {
-    res.json({
+  }
+  
+  if (!isPasswordValid(password)) {
+    return res.json({
       success: false,
       msg: 'Invalid password format check input passwords and try again',
       supportedFormat: 'must not greater than 6',
     });
-  } else if (!isPasswordValid(confirmPassword)) {
-    res.json({
+  }
+  
+  if (!isPasswordValid(confirmPassword)) {
+    return res.json({
       success: false,
       msg: 'Invalid password format check input passwords and try again',
       supportedFormat: 'must not greater than 6',
     });
-  } else if (confirmPassword != password) {
-    res.json({
+  }
+  
+  if (confirmPassword != password) {
+    return res.json({
       success: false,
-      msg: 'Password Did not match confirmation Password Check and try again',
+      msg: 'Password did not match confirmation Password Check and try again',
     });
   } else {
     try {
@@ -179,7 +196,7 @@ const setPassword = asyncHandler(async (req, res) => {
 
       if (findInvestorWithAssociatedEmailId.emailId != emailId) {
         res.json({
-          msg: 'No Investor With This Associated EmailId Cant setPassword',
+          msg: 'No Investor With This Associated EmailId, Cant setPassword',
           success: false,
         });
       } else if (findInvestorWithAssociatedEmailId.password != null) {
