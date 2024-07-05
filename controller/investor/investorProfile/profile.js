@@ -233,32 +233,37 @@ const TurnOnNotificationInvestorSettings = asyncHandler(async (req, res) => {
     let text;
     const { id } = req.investor;
     const { receiveNotification } = req.body;
-    if (receiveNotification === false) {
+
+    if (!receiveNotification) {
+      return res.status(400).json({ msg: "All fields are required!"});
+    }
+
+    // console.log({receiveNotification});
+    const receiveNotificationBooleanValue =  /^true$/i.test(receiveNotification);
+
+    if (receiveNotificationBooleanValue === false) {
       text = 'off';
       console.log('This text', text);
-    } else if (receiveNotification === true) {
+    } else if (receiveNotificationBooleanValue === true) {
       text = 'on';
       console.log('This text', text);
     }
-    if (receiveNotification === null) {
-      res.json({
-        success: false,
-        msg: 'Empty Input Fields!',
-      });
-    } else {
-      const turnOffNotification = await prisma.Investor.update({
-        where: {
-          id,
-        },
-        data: {
-          receiveNotification,
-        },
-      });
-      res.json({
-        msg: `Notification Turn ${text} successfully`,
-        data: turnOffNotification,
-      });
-    }
+
+    const turnOffNotification = await prisma.Investor.update({
+      where: {
+        id,
+      },
+      data: {
+        receiveNotification: receiveNotificationBooleanValue,
+      },
+    });
+
+    // console.log(turnOffNotification);
+    return res.json({
+      msg: `Notification Turned ${text} successfully`,
+      data: turnOffNotification,
+    });
+    
   } catch (error) {
     return res.status(500).json({ error: error });
   }
