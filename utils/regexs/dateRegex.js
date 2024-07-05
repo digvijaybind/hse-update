@@ -1,5 +1,6 @@
-const isDateValid = async (date) => {
-  return await !new Date(date).getTime();
+const isDateValid = (date) => {
+  const parsedDate = new Date(date);
+  return !isNaN(parsedDate.getTime());
 };
 
 module.exports = { isDateValid };

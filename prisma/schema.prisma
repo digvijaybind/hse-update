@@ -44,7 +44,7 @@ model Investor {
   organization               String?
   roleAtWork                 String?
   workingDuration            String?
-  incomeRange                AnnualIncomeRange?
+  incomeRange                String?
   profileUserImagePath       String?
   investmentPreference       String?
   addressOne                 String?
@@ -101,7 +101,7 @@ model Property {
   floorLayoutDocumentPath   String
   companyDetailsDocumentPath String
   ownerShipDocumentPath     String
-  otherDocumenthPath        String?
+  otherDocumentPath        String?
   faqs                      String
   investors                 PropertyInvestor[]
   bookmarks                  Bookmark[]

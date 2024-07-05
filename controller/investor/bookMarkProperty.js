@@ -17,8 +17,12 @@ const bookMarkProperty = asyncHandler(async (req, res) => {
   try {
     const bookmark = await prisma.Bookmark.create({
       data: {
-        investorId,
-        propertyId,
+        investor: {
+          connect: { id: investorId },
+        },
+        property: {
+          connect: { id: propertyId },
+        },
       },
     });
 

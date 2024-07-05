@@ -23,79 +23,116 @@ const { OTPService } = require('../redis/nodeCacheService');
 var request = require('request');
 
 const storage = multer.memoryStorage(); // Use memory storage for multer
+
 const upload = multer({ storage: storage }).single('selfieImagePath');
+const uploadAdressKyc = multer({ storage: storage }).single('addressImagePath');
 
 const createInvestor = asyncHandler(async (req, res) => {
   try {
     let { fullName, mobileNumber, dateofBirth, emailId } = req.body;
-    fullName = fullName.trim();
-    mobileNumber = mobileNumber.trim();
-    dateofBirth = dateofBirth.trim();
-    emailId = emailId.trim();
+    
+    if (
+      !fullName ||
+      !mobileNumber ||
+      !dateofBirth ||
+      !emailId
+    ) {
+      return res.json({
+        success: false,
+        msg: 'All fields are required!',
+      });
+    }
+
     if (
       fullName == '' ||
       mobileNumber == '' ||
       dateofBirth == '' ||
       emailId == ''
     ) {
-      res.json({
+      return res.json({
         success: false,
         msg: 'Empty Input Fields!',
       });
-    } else if (!isValidEmail(emailId)) {
-      res.json({
+    }
+
+    fullName = fullName.trim();
+    mobileNumber = mobileNumber.trim();
+    dateofBirth = dateofBirth.trim();
+    emailId = emailId.trim();    
+    
+    if (!isValidEmail(emailId)) {
+      return res.json({
         success: false,
         msg: 'Invalid emailId entered',
       });
-    } else if (!isValidMobileNumber(mobileNumber)) {
-      res.json({
+    } 
+    
+    if (!isValidMobileNumber(mobileNumber)) {
+      return res.json({
         success: false,
         msg: 'Invalid phoneNumber must include country code i.e 2349050779526',
       });
-    } else if (!isDateValid(dateofBirth)) {
-      res.json({
+    }
+    
+    if (!isDateValid(dateofBirth)) {
+      return res.json({
         success: false,
         msg: 'Invalid dateofBirth entered',
       });
-    } else {
-      const findInvestor = await prisma.Investor.findUnique({
-        where: {
-          emailId,
+    } 
+
+    const existingInvestorMobileNumber = await prisma.Investor.findUnique({
+      where: { mobileNumber: mobileNumber },
+    });
+
+    if (existingInvestorMobileNumber) {
+      return res.status(400).json({ error: 'Investor with this mobile number already exists.' });
+    }
+    const findInvestor = await prisma.Investor.findUnique({
+      where: {
+        emailId,
+      },
+    });
+    if (findInvestor === null) {
+      // create a new Investor
+      const Investor = await prisma.Investor.create({
+        data: {
+          fullName: fullName,
+          mobileNumber: mobileNumber,
+          dateofBirth: new Date(dateofBirth),
+          emailId: emailId,
+          role: Role.INVESTOR,
         },
       });
-      if (findInvestor === null) {
-        // create a new Investor
-        const Investor = await prisma.Investor.create({
-          data: {
-            fullName: fullName,
-            mobileNumber: mobileNumber,
-            dateofBirth: dateofBirth,
-            emailId: emailId,
-            role: Role.INVESTOR,
-          },
-        });
-        const otpResponse = await SendchampService.sendEmailOTP({
-          meta_data: 'test_meta',
-          channel: 'email',
-          sender: 'Sendchamp',
-          token_type: 'numeric',
-          token_length: 6,
-          expiration_time: 5,
-          customer_email_address: emailId,
-        });
-        console.log('OTP Response:', otpResponse);
-        // Save OTP reference in Redis
-        await OTPService.storeEmailIdOTP(otpResponse.data.data.reference);
+      
+      const otpResponse = await SendchampService.sendEmailOTP({
+        meta_data: 'test_meta',
+        channel: 'email',
+        sender: 'Sendchamp',
+        token_type: 'numeric',
+        token_length: 6,
+        expiration_time: 5,
+        customer_email_address: emailId,
+      });
 
-        res.json({ Investor: Investor, SendChampResponse: otpResponse });
+      // console.log('OTP Response:', otpResponse);
+      // Save OTP reference in Redis
+      await OTPService.storeEmailIdOTP(otpResponse.data.data.reference);
+
+        return res.json({ Investor: Investor, SendChampResponse: otpResponse });
       } else {
-        res.json({
-          msg: 'Investor Already Exists',
-          success: false,
-        });
-      }
+      return res.json({
+        msg: 'Investor Already Exists',
+        success: false, 
+      });
     }
   } catch (error) {
+    if (error.name === 'PrismaClientValidationError') {
+      console.error('Validation Error:', error.message);
+      console.error('Details:', error.meta);
+    } else {
+      console.error('Error creating record:', error);
+    }
     res.status(500).json({ error: 'request failed', msg: error });
   }
 });
@@ -103,35 +140,52 @@ const createInvestor = asyncHandler(async (req, res) => {
 //Update InvestorPasswordWith Password
 const setPassword = asyncHandler(async (req, res) => {
   let { emailId, password, confirmPassword } = req.body;
-  emailId = emailId.trim();
-  password = password.trim();
-  confirmPassword = confirmPassword.trim();
+
+  if (!emailId || !password || !confirmPassword) {
+    return res.json({
+      success: false,
+      msg: 'All fields are required!',
+    });
+  }
+
   if (emailId == '' || password == '' || confirmPassword == '') {
-    res.json({
+    return res.json({
       success: false,
       msg: 'Empty Input Fields!',
     });
-  } else if (!isValidEmail(emailId)) {
-    res.json({
+  }  
+
+  emailId = emailId.trim();
+  password = password.trim();
+  confirmPassword = confirmPassword.trim();
+  
+  if (!isValidEmail(emailId)) {
+    return res.json({
       success: false,
       msg: 'Invalid email entered',
     });
-  } else if (!isPasswordValid(password)) {
-    res.json({
+  }
+  
+  if (!isPasswordValid(password)) {
+    return res.json({
       success: false,
       msg: 'Invalid password format check input passwords and try again',
       supportedFormat: 'must not greater than 6',
     });
-  } else if (!isPasswordValid(confirmPassword)) {
-    res.json({
+  }
+  
+  if (!isPasswordValid(confirmPassword)) {
+    return res.json({
       success: false,
       msg: 'Invalid password format check input passwords and try again',
       supportedFormat: 'must not greater than 6',
     });
-  } else if (confirmPassword != password) {
-    res.json({
+  }
+  
+  if (confirmPassword != password) {
+    return res.json({
       success: false,
-      msg: 'Password Did not match confirmation Password Check and try again',
+      msg: 'Password did not match confirmation Password Check and try again',
     });
   } else {
     try {
@@ -144,7 +198,7 @@ const setPassword = asyncHandler(async (req, res) => {
 
       if (findInvestorWithAssociatedEmailId.emailId != emailId) {
         res.json({
-          msg: 'No Investor With This Associated EmailId Cant setPassword',
+          msg: 'No Investor With This Associated EmailId, Cant setPassword',
           success: false,
         });
       } else if (findInvestorWithAssociatedEmailId.password != null) {
@@ -184,17 +238,28 @@ const setPassword = asyncHandler(async (req, res) => {
 const updateInvestorEmploymentKyc = asyncHandler(async (req, res) => {
   const { id } = req.investor;
   let { industry, organization, roleAtWork, workingDuration } = req.body;
+
+  if ( 
+    !industry 
+    || !organization
+    || !roleAtWork 
+    || !workingDuration 
+  ) {
+    return res.status(400).json({ msg: "All fields are required!"})
+  }
+
   industry = industry.trim();
   organization = organization.trim();
   roleAtWork = roleAtWork.trim();
   workingDuration = workingDuration.trim();
+
   if (
     industry == '' ||
     organization == '' ||
     roleAtWork == '' ||
     workingDuration == ''
   ) {
-    res.json({
+    return res.json({
       success: false,
       msg: 'Empty Input Fields!',
     });
@@ -212,7 +277,7 @@ const updateInvestorEmploymentKyc = asyncHandler(async (req, res) => {
             workingDuration,
           },
         });
-      res.json(InvestorsWithUpdatedEmploymentDetails);
+      return res.json(InvestorsWithUpdatedEmploymentDetails);
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'request failed', msg: error });
@@ -226,9 +291,14 @@ const updateInvestorAnnualIncomeKyc = asyncHandler(async (req, res) => {
   try {
     const { id } = req.investor;
     let { incomeRange } = req.body;
+
+    if (!incomeRange) {
+      return res.status(400).json({ msg: "Income Range is required!"})
+    }
+
     incomeRange = incomeRange.trim();
     if (incomeRange == '') {
-      res.json({
+      return res.json({
         success: false,
         msg: 'Empty Input Fields!',
       });
@@ -241,7 +311,7 @@ const updateInvestorAnnualIncomeKyc = asyncHandler(async (req, res) => {
           incomeRange,
         },
       });
-      res.json(InvestorsWithUpdatedAnnualIncome);
+      return res.json(InvestorsWithUpdatedAnnualIncome);
     }
   } catch (error) {
     console.error(error);
@@ -318,21 +388,29 @@ const refreshToken = asyncHandler(async (req, res) => {
   const { token } = req.body;
 
   if (!token) return res.sendStatus(401);
+  console.log({refreshTokens});
   if (!refreshTokens.includes(token)) return res.sendStatus(403);
 
   jwt.verify(token, process.env.REFRESH_TOKEN_SECRET, (err, decoded) => {
     if (err) return res.sendStatus(403);
 
     const accessToken = generateAccessToken(decoded?.id);
-    console.log('This is acccess Token 370', accessToken);
+    // console.log('This is acccess Token 370', accessToken);
     res.json({ accessToken });
   });
 });
 
 const logOut = asyncHandler(async (req, res) => {
   const { token } = req.body;
+
+  if (!token) {
+    return res.status(400).json({ msg: "Token is required to log out." });
+  }
+
+  console.log({refreshTokens}, "1");
   refreshTokens = refreshTokens.filter((rt) => rt !== token);
-  res.sendStatus(204);
+  console.log({refreshTokens}, "2");
+  res.status(200).json({ msg: "Logged out successfully."});
 });
 //Kyc
 //KYC Selfie Uploading
@@ -346,7 +424,7 @@ const uploadSelfieKyc = asyncHandler(async (req, res) => {
       }
 
       // Check if req.file contains the uploaded file information
-      console.log(req.file);
+      // console.log(req.file);
       const { id } = req.investor;
 
       // }
@@ -359,10 +437,15 @@ const uploadSelfieKyc = asyncHandler(async (req, res) => {
       );
 
       if (findInvestorWithAssociatedSelfie.selfieImagePath != null) {
-        res.json({
+        return res.json({
           msg: 'selfieImagePath Already Uploaded',
         });
       } else if (findInvestorWithAssociatedSelfie.selfieImagePath === null) {
+
+        if (!req.file) {
+          return res.status(400).json({ error: "Please upload all required documents"})
+        }
+
         try {
           const imageBuffer = req.file.buffer; // Get the image buffer
           const imageContentType = req.file.mimetype; // Get the image content type
@@ -382,7 +465,7 @@ const uploadSelfieKyc = asyncHandler(async (req, res) => {
             return res.status(500).json({ error: 'File upload failed' });
           }
           const imageUrlPath = data.path;
-          console.log(imageUrlPath);
+          // console.log(imageUrlPath);
 
           if (!imageUrlPath) {
             return res.status(500).json({ error: 'File upload failed' });
@@ -392,7 +475,7 @@ const uploadSelfieKyc = asyncHandler(async (req, res) => {
             .from('gallery')
             .getPublicUrl(imageUrlPath);
 
-          console.log(imageUrl);
+          // console.log(imageUrl);
           const InvestorWithUploadedSelfie = await prisma.Investor.update({
             where: {
               id,
@@ -420,14 +503,14 @@ const uploadSelfieKyc = asyncHandler(async (req, res) => {
 
 const addressKyc = asyncHandler(async (req, res) => {
   try {
-    upload(req, res, async function (err) {
+    uploadAdressKyc(req, res, async function (err) {
       if (err) {
         console.error(err);
         return res.status(400).json({ error: 'File upload failed' });
       }
 
       // Check if req.file contains the uploaded file information
-      console.log(req.file);
+      // console.log(req.file);
       const { id } = req.investor;
 
       const findInvestorWithAssociatedAddress =
@@ -438,10 +521,15 @@ const addressKyc = asyncHandler(async (req, res) => {
         });
 
       if (findInvestorWithAssociatedAddress.addressImagePath != null) {
-        res.json({
+        return res.json({
           msg: 'addressImagePath Already Uploaded',
         });
-      } else if ((findInvestorWithAssociatedAddress = null)) {
+      } else if ((findInvestorWithAssociatedAddress.addressImagePath === null)) {
+
+        if (!req.files) {
+          return res.status(400).json({ error: "Please upload all required documents"})
+        }
+        
         try {
           const imageBuffer = req.file.buffer; // Get the image buffer
           const imageContentType = req.file.mimetype; // Get the image content type
@@ -461,7 +549,7 @@ const addressKyc = asyncHandler(async (req, res) => {
             return res.status(500).json({ error: 'File upload failed' });
           }
           const imageUrlPath = data.path;
-          console.log(imageUrlPath);
+          // console.log(imageUrlPath);
 
           if (!imageUrlPath) {
             return res.status(500).json({ error: 'File upload failed' });
@@ -471,7 +559,7 @@ const addressKyc = asyncHandler(async (req, res) => {
             .from('gallery')
             .getPublicUrl(imageUrlPath);
 
-          console.log(imageUrl);
+          // console.log(imageUrl);
           const InvestorWithUploadedAddress = await prisma.Investor.update({
             where: {
               id,
@@ -519,6 +607,7 @@ const sendPhoneNumberOtp = asyncHandler(async (req, res) => {
 
 const sendEmailAddressOtp = asyncHandler(async (req, res) => {
   const emailId = req.investor.emailId;
+
   try {
     const otpResponse = await SendchampService.sendEmailOTP({
       meta_data: 'test_meta',
@@ -529,7 +618,7 @@ const sendEmailAddressOtp = asyncHandler(async (req, res) => {
       expiration_time: 5,
       customer_email_address: emailId,
     });
-    console.log('OTP Response:', otpResponse);
+    // console.log('OTP Response:', otpResponse);
     await OTPService.storeEmailIdOTP(otpResponse.data.data.reference);
     res.json({ SendChampResponse: otpResponse });
   } catch (error) {
@@ -552,6 +641,18 @@ const verifyEmailAddressOtp = asyncHandler(async (req, res) => {
       verification_reference,
       verification_code,
     });
+
+    if (verificationResponse.status === "success") {
+      await prisma.Investor.update({
+        where: {
+          emailId
+        },
+        data: {
+          emailVerified: true
+        }
+      });
+    }
+
     res.json({ VerificationResponse: verificationResponse });
   } catch (error) {
     console.log('error 619', error);
@@ -573,6 +674,18 @@ const verifyMobileNumberOtp = asyncHandler(async (req, res) => {
       verification_reference,
       verification_code,
     });
+
+    if (verificationResponse.status === "success") {
+      await prisma.Investor.update({
+        where: {
+          mobileNumber
+        },
+        data: {
+          phoneNumberVerified: true
+        }
+      });
+    }
+
     res.json({ VerificationResponse: verificationResponse });
   } catch (error) {
     console.log('error 619', error);
@@ -583,6 +696,7 @@ module.exports = {
   createInvestor,
   setPassword,
   loginInvestor,
+  logOut,
   updateInvestorEmploymentKyc,
   updateInvestorAnnualIncomeKyc,
   uploadSelfieKyc,

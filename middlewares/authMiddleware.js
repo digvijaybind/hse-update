@@ -43,7 +43,7 @@ const AdminAuthMiddleware = asyncHandler(async (req, res, next) => {
     try {
       if (token) {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        console.log('This is decode token', decoded);
+        // console.log('This is decode token', decoded);
         const admin = await prisma.Admin.findUnique({
           where: {
             id: decoded?.id,
@@ -53,7 +53,7 @@ const AdminAuthMiddleware = asyncHandler(async (req, res, next) => {
           return res.status(401).json({ message: 'Admin not found' });
         }
         req.admin = admin;
-        console.log('THis is admin', admin);
+        // console.log('THis is admin', admin);
         next();
       }
     } catch (error) {

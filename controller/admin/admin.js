@@ -2,7 +2,7 @@ const { PrismaClient, Role } = require('@prisma/client');
 const asyncHandler = require('express-async-handler');
 const { superBase } = require('../../config/supabse');
 const path = require('path');
-const { generateToken } = require('../../config/jwtToken');
+const { generateAccessToken } = require('../../config/jwtToken');
 const argon = require('argon2');
 const prisma = new PrismaClient();
 const multer = require('multer');
@@ -31,6 +31,11 @@ const upload = multer({ storage: storage }).fields(
 const createAdmin = asyncHandler(async (req, res) => {
   try {
     let { name, email, password } = req.body;
+
+    if ( !name || email || password) {
+      return res.status(400).json({ msg: "All fields are required!"});
+    }
+
     name = name.trim();
     email = email.trim();
 
@@ -83,8 +88,13 @@ const createAdmin = asyncHandler(async (req, res) => {
 });
 
 const loginAdmin = asyncHandler(async (req, res) => {
+  let { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ msg: "All fields are required!"});
+  }
+
   try {
-    let { email, password } = req.body;
     email = email.trim();
     password = password.trim();
     if (email == '' || password == '') {
@@ -111,8 +121,9 @@ const loginAdmin = asyncHandler(async (req, res) => {
           password: findAdminByEmail?.password,
           name: findAdminByEmail?.name,
           role: findAdminByEmail.role,
-          token: generateToken(findAdminByEmail?.id),
+          token: generateAccessToken(findAdminByEmail?.id),
         });
+        return;
       } else {
         throw new Error('Invalid Credentials');
       }
@@ -131,7 +142,7 @@ const createProperty = asyncHandler(async (req, res) => {
       }
 
       // Check if req.file contains the uploaded file information
-      console.log(req.file);
+      // console.log(req.files);
       let {
         propertyName,
         propertyLocation,
@@ -179,7 +190,12 @@ const createProperty = asyncHandler(async (req, res) => {
 
         const imageUrls = {};
 
+        if (!req.files) {
+          return res.status(400).json({ error: "Please upload all required documents"})
+        }
+        
         for (const imageType of imageTypes) {
+
           if (req.files[imageType]) {
             const imageFile = req.files[imageType][0];
             const imageBuffer = imageFile.buffer;
@@ -249,7 +265,7 @@ const createProperty = asyncHandler(async (req, res) => {
             }),
             ...(req.files.otherDocumentPath && {
               otherDocumentPath: imageUrls.otherDocumentPath,
-            }),
+            }), 
           },
         });
         res.json({

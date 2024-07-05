@@ -5,49 +5,73 @@ const { isDateValid } = require('../../../utils/regexs/dateRegex');
 const { isPasswordValid } = require('../../../utils/regexs/passwordRegex');
 const prisma = new PrismaClient();
 const argon = require('argon2');
+const { isValidMobileNumber } = require('../../../utils/regexs/phoneNumberRegex');
 
 const updateInvestorPersonalProfile = asyncHandler(async (req, res) => {
   try {
     const { id } = req.investor;
     let { emailId, mobileNumber, dateofBirth, investmentPreference } = req.body;
+
+    if (
+      !emailId
+      || !mobileNumber 
+      || !dateofBirth 
+      || !investmentPreference 
+    ) {
+      return res.status(400).json({ msg: "All fields are required!"});
+    }
+
     emailId = emailId.trim();
     mobileNumber = mobileNumber.trim();
     dateofBirth = dateofBirth.trim();
     investmentPreference = investmentPreference.trim();
+
     if (
       emailId == '' ||
       mobileNumber == '' ||
       dateofBirth == '' ||
       investmentPreference == ''
     ) {
-      res.json({
+      return res.json({
         success: false,
         msg: 'Empty Input Fields!',
       });
-    } else if (!isValidEmail(emailId)) {
-      res.json({
+    }
+    
+    if (!isValidEmail(emailId)) {
+      return res.json({
         success: false,
         msg: 'Invalid email entered',
       });
-    } else if (!isDateValid(dateofBirth)) {
-      res.json({
+    }
+    
+    if (!isValidMobileNumber(mobileNumber)) {
+      return res.json({
+        success: false,
+        msg: 'Invalid mobile number entered',
+      });
+    }
+    
+    if (!isDateValid(dateofBirth)) {
+      return res.json({
         success: false,
         msg: 'Invalid dateofBirth entered',
       });
-    } else {
-      const InvestorsIdToken = await prisma.Investor.update({
-        where: {
-          id,
-        },
-        data: {
-          emailId,
-          mobileNumber,
-          dateofBirth,
-          investmentPreference,
-        },
-      });
-      res.json(InvestorsIdToken);
     }
+
+    const InvestorsIdToken = await prisma.Investor.update({
+      where: {
+        id,
+      },
+      data: {
+        emailId,
+        mobileNumber,
+        dateofBirth: new Date(dateofBirth),
+        investmentPreference,
+      },
+    });
+    return res.json(InvestorsIdToken);
+    
   } catch (error) {
     return res.status(500).json({ error: error });
   }
@@ -58,6 +82,17 @@ const updateInvestorAddressProfileInfo = asyncHandler(async (req, res) => {
     const { id } = req.investor;
     let { addressOne, addressTwo, addressThree, pinCode, state, city } =
       req.body;
+
+    if (
+      !addressOne 
+      || !addressTwo 
+      || !addressThree 
+      || !pinCode 
+      || !state 
+      || !city 
+    ) {
+      return res.status(400).json({ msg: "All fields are required!"});
+    }
     addressOne = addressOne.trim();
     addressTwo = addressTwo.trim();
     addressThree = addressThree.trim();
@@ -80,7 +115,7 @@ const updateInvestorAddressProfileInfo = asyncHandler(async (req, res) => {
       const InvestorsIdToken = await prisma.Investor.update({
         where: {
           id,
-        },
+        }, 
         data: {
           addressOne,
           addressTwo,
@@ -101,9 +136,15 @@ const changeInvestorPassword = asyncHandler(async (req, res) => {
   try {
     const { id } = req.investor;
     let { formerPassword, newPassword, confirmNewPassword } = req.body;
+
+    if (!formerPassword || !newPassword || !confirmNewPassword) {
+      return res.status(400).json({ msg: "All fields are required!"});
+    }
+
     formerPassword = formerPassword.trim();
     newPassword = newPassword.trim();
     confirmNewPassword = confirmNewPassword.trim();
+
     if (formerPassword == '' || newPassword == '' || confirmNewPassword == '') {
       res.json({
         success: false,
@@ -134,9 +175,9 @@ const changeInvestorPassword = asyncHandler(async (req, res) => {
       if (!pwMatches) {
         res.json({
           success: false,
-          msg: 'formerPassword those not exist try to reset formerPassword before trying to change Password',
+          msg: 'formerPassword does not exist try to reset formerPassword before trying to change Password',
         });
-      } else if (newPassword != confirmNewPassword) {
+      } else if (newPassword !== confirmNewPassword) {
         res.json({
           success: false,
           msg: 'newPassword didnt match confirmNewPassword',
@@ -192,32 +233,37 @@ const TurnOnNotificationInvestorSettings = asyncHandler(async (req, res) => {
     let text;
     const { id } = req.investor;
     const { receiveNotification } = req.body;
-    if (receiveNotification === false) {
+
+    if (!receiveNotification) {
+      return res.status(400).json({ msg: "All fields are required!"});
+    }
+
+    // console.log({receiveNotification});
+    const receiveNotificationBooleanValue =  /^true$/i.test(receiveNotification);
+
+    if (receiveNotificationBooleanValue === false) {
       text = 'off';
       console.log('This text', text);
-    } else if (receiveNotification === true) {
+    } else if (receiveNotificationBooleanValue === true) {
       text = 'on';
       console.log('This text', text);
     }
-    if (receiveNotification === null) {
-      res.json({
-        success: false,
-        msg: 'Empty Input Fields!',
-      });
-    } else {
-      const turnOffNotification = await prisma.Investor.update({
-        where: {
-          id,
-        },
-        data: {
-          receiveNotification,
-        },
-      });
-      res.json({
-        msg: `Notification Turn ${text} successfully`,
-        data: turnOffNotification,
-      });
-    }
+
+    const turnOffNotification = await prisma.Investor.update({
+      where: {
+        id,
+      },
+      data: {
+        receiveNotification: receiveNotificationBooleanValue,
+      },
+    });
+
+    // console.log(turnOffNotification);
+    return res.json({
+      msg: `Notification Turned ${text} successfully`,
+      data: turnOffNotification,
+    });
+    
   } catch (error) {
     return res.status(500).json({ error: error });
   }
@@ -225,7 +271,7 @@ const TurnOnNotificationInvestorSettings = asyncHandler(async (req, res) => {
 
 const getProfileDetails = asyncHandler(async (req, res) => {
   try {
-    const { id } = req.investor;
+    const { id } = req.investor; 
 
     const getSingleTeamMember = await prisma.Investor.findUnique({
       where: {
