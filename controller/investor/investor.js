@@ -23,7 +23,9 @@ const { OTPService } = require('../redis/nodeCacheService');
 var request = require('request');
 
 const storage = multer.memoryStorage(); // Use memory storage for multer
+
 const upload = multer({ storage: storage }).single('selfieImagePath');
+const uploadAdressKyc = multer({ storage: storage }).single('addressImagePath');
 
 const createInvestor = asyncHandler(async (req, res) => {
   try {
@@ -496,14 +498,14 @@ const uploadSelfieKyc = asyncHandler(async (req, res) => {
 
 const addressKyc = asyncHandler(async (req, res) => {
   try {
-    upload(req, res, async function (err) {
+    uploadAdressKyc(req, res, async function (err) {
       if (err) {
         console.error(err);
         return res.status(400).json({ error: 'File upload failed' });
       }
 
       // Check if req.file contains the uploaded file information
-      console.log(req.file);
+      // console.log(req.file);
       const { id } = req.investor;
 
       const findInvestorWithAssociatedAddress =
@@ -514,10 +516,10 @@ const addressKyc = asyncHandler(async (req, res) => {
         });
 
       if (findInvestorWithAssociatedAddress.addressImagePath != null) {
-        res.json({
+        return res.json({
           msg: 'addressImagePath Already Uploaded',
         });
-      } else if ((findInvestorWithAssociatedAddress = null)) {
+      } else if ((findInvestorWithAssociatedAddress.addressImagePath === null)) {
         try {
           const imageBuffer = req.file.buffer; // Get the image buffer
           const imageContentType = req.file.mimetype; // Get the image content type
@@ -537,7 +539,7 @@ const addressKyc = asyncHandler(async (req, res) => {
             return res.status(500).json({ error: 'File upload failed' });
           }
           const imageUrlPath = data.path;
-          console.log(imageUrlPath);
+          // console.log(imageUrlPath);
 
           if (!imageUrlPath) {
             return res.status(500).json({ error: 'File upload failed' });
@@ -547,7 +549,7 @@ const addressKyc = asyncHandler(async (req, res) => {
             .from('gallery')
             .getPublicUrl(imageUrlPath);
 
-          console.log(imageUrl);
+          // console.log(imageUrl);
           const InvestorWithUploadedAddress = await prisma.Investor.update({
             where: {
               id,
