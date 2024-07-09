@@ -1,16 +1,20 @@
-const { PrismaClient } = require('@prisma/client');
-const asyncHandler = require('express-async-handler');
+// Import required libraries and modules
+const {PrismaClient} = require("@prisma/client"); // ORM for database operations
+const asyncHandler = require("express-async-handler"); // Middleware to handle async operations and errors
 
-const dotenv = require('dotenv');
+// Load environment variables
+const dotenv = require("dotenv");
 dotenv.config();
-const argon = require('argon2');
-const prisma = new PrismaClient();
-const multer = require('multer');
+const argon = require("argon2"); // Library for password hashing
+const prisma = new PrismaClient(); // Initialize Prisma Client
+const multer = require("multer"); // Middleware for handling multipart/form-data (file uploads)
 
+// Async handler function to handle property investment
 const investInProperty = asyncHandler(async (req, res) => {
   try {
-    const investorId = req.investor.id;
-    const { propertyId, amountInvested } = req.body;
+    const investorId = req.investor.id; // Get investor ID from the request
+    const {propertyId, amountInvested} = req.body; // Get property ID and amount invested from the request body
+
     // Check if required fields are present
     if (
       propertyId === null ||
@@ -22,50 +26,56 @@ const investInProperty = asyncHandler(async (req, res) => {
     ) {
       return res.json({
         success: false,
-        msg: 'Missing property or investor ID or amountInvested',
+        msg: "Missing property or investor ID or amountInvested",
       });
     }
 
+    // Fetch property, investor, and property investors data from the database
     const [property, investor, propertyInvestors] = await Promise.all([
       prisma.Property.findUnique({
-        where: { id: propertyId },
+        where: {id: propertyId},
       }),
       prisma.Investor.findUnique({
-        where: { id: investorId },
+        where: {id: investorId},
       }),
       prisma.PropertyInvestor.findMany({
-        where: { propertyId: propertyId },
-        include: { investor: true, property: true },
+        where: {propertyId: propertyId},
+        include: {investor: true, property: true},
       }),
     ]);
 
+    // Check if property or investor does not exist
     if (!property || !investor) {
       return res.json({
         success: false,
-        msg: 'Invalid property or investor ID',
+        msg: "Invalid property or investor ID",
       });
     }
 
+    // Check if investment amount is valid
     if (Number(amountInvested) <= 0) {
-      return res.json({ success: false, msg: 'Invalid investment amount' });
+      return res.json({success: false, msg: "Invalid investment amount"});
     }
 
+    // Check if investor has sufficient funds
     if (Number(amountInvested) > Number(investor.fundsAvailable)) {
       return res.json({
         success: false,
-        msg: 'Insufficient funds for investment',
+        msg: "Insufficient funds for investment",
       });
     }
 
+    // Check if the property is already fully invested
     if (Number(property.tokenLeft) === 0) {
       return res.json({
         success: false,
-        msg: 'Property is already fully invested',
+        msg: "Property is already fully invested",
       });
     }
 
     let totalInvestedTokens = 0;
 
+    // Calculate total invested tokens for unique investors
     if (Array.isArray(propertyInvestors) && propertyInvestors.length > 0) {
       // Filter out duplicate investors
       const uniqueInvestors = propertyInvestors.reduce((acc, pi) => {
@@ -86,7 +96,7 @@ const investInProperty = asyncHandler(async (req, res) => {
       }, 0);
     }
 
-    console.log('Total Tokens on Property:', totalInvestedTokens);
+    console.log("Total Tokens on Property:", totalInvestedTokens);
 
     // Helper functions to calculate investment details
     function calculateTokenPrice(propertyValue, totalTokens) {
@@ -105,51 +115,51 @@ const investInProperty = asyncHandler(async (req, res) => {
       return investmentTokens; // Owned amount is directly represented by the number of tokens purchased
     }
 
-    // User invests in the property with $50,000
+    // Calculate investment details
     const tokenPrice = calculateTokenPrice(
       Number(property.totalAssetValueLeft),
       Number(property.tokenLeft)
     ); // Calculate token price
-    console.log('This tokenprice 83', tokenPrice);
+    console.log("This tokenprice 83", tokenPrice);
+
     const investmentTokens = calculateInvestmentTokens(
       Number(amountInvested),
       tokenPrice
     ); // Calculate tokens purchased
-    console.log('THis is investmentTokens 88', investmentTokens);
+    console.log("THis is investmentTokens 88", investmentTokens);
 
-    // Calculate investment details
     const userPercent = calculateUserPercent(
       investmentTokens,
       Number(property.totalToken)
-    );
-    console.log('This is user percent 93', userPercent);
+    ); // Calculate user percentage ownership
+    console.log("This is user percent 93", userPercent);
 
+    // Use Prisma transaction to ensure atomic updates
     await prisma.$transaction(async (prisma) => {
+      // Update property details
       await prisma.Property.update({
-        where: { id: propertyId },
+        where: {id: propertyId},
         data: {
           myTokenOnProperty: parseFloat(
             property.myTokenOnProperty + investmentTokens
           ),
           ageGrowth: property.ageGrowth + userPercent,
-          // Update total invested tokens on property
           tokenLeft: String(
             parseFloat(property.totalToken) -
               (totalInvestedTokens + investmentTokens)
           ),
-          // Update tokenLeft based on total invested tokens
           totalAssetValueLeft: String(
             Number(property.totalAssetValueLeft) - amountInvested
           ),
           amountInvestedByMe: parseFloat(
             property.amountInvestedByMe + String(userPercent)
           ),
-          // Increase invested amount for investor
         },
       });
 
+      // Update investor details
       await prisma.Investor.update({
-        where: { id: investorId },
+        where: {id: investorId},
         data: {
           fundsAvailable: String(
             Number(investor.fundsAvailable) - amountInvested
@@ -157,6 +167,7 @@ const investInProperty = asyncHandler(async (req, res) => {
         },
       });
 
+      // Create a new property investor record
       await prisma.PropertyInvestor.create({
         data: {
           propertyId: property.id,
@@ -165,16 +176,18 @@ const investInProperty = asyncHandler(async (req, res) => {
       });
     });
 
+    // Send success response
     res.json({
       success: true,
-      msg: 'Investment successful!',
+      msg: "Investment successful!",
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Investment failed' });
+    res.status(500).json({error: "Investment failed"});
   }
 });
 
+// Export the investInProperty function
 module.exports = {
   investInProperty,
 };

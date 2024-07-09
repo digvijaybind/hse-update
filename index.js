@@ -10,6 +10,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const { connectToDatabase } = require('./config/database');
 const { superBaseConnect } = require('./config/supabse');
+const setupSwagger = require('./swagger'); // Adjust the path as necessary
 
 connectToDatabase();
 superBaseConnect();
@@ -24,6 +25,7 @@ app.get('/', (req, res) => {
   });
 });
 
+setupSwagger(app);
 app.use('/api', authInvestorRouter);
 
 app.use(notFound);

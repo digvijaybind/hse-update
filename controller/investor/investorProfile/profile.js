@@ -1,68 +1,58 @@
-const { PrismaClient } = require('@prisma/client');
-const asyncHandler = require('express-async-handler');
-const { isValidEmail } = require('../../../utils/regexs/emailRegex');
-const { isDateValid } = require('../../../utils/regexs/dateRegex');
-const { isPasswordValid } = require('../../../utils/regexs/passwordRegex');
+// Import necessary modules and utilities
+const {PrismaClient} = require("@prisma/client");
+const asyncHandler = require("express-async-handler");
+const {isValidEmail} = require("../../../utils/regexs/emailRegex");
+const {isDateValid} = require("../../../utils/regexs/dateRegex");
+const {isPasswordValid} = require("../../../utils/regexs/passwordRegex");
 const prisma = new PrismaClient();
-const argon = require('argon2');
-const { isValidMobileNumber } = require('../../../utils/regexs/phoneNumberRegex');
+const argon = require("argon2");
+const {isValidMobileNumber} = require("../../../utils/regexs/phoneNumberRegex");
 
+// Update investor's personal profile handler
 const updateInvestorPersonalProfile = asyncHandler(async (req, res) => {
   try {
-    const { id } = req.investor;
-    let { emailId, mobileNumber, dateofBirth, investmentPreference } = req.body;
+    const {id} = req.investor;
+    let {emailId, mobileNumber, dateofBirth, investmentPreference} = req.body;
 
-    if (
-      !emailId
-      || !mobileNumber 
-      || !dateofBirth 
-      || !investmentPreference 
-    ) {
-      return res.status(400).json({ msg: "All fields are required!"});
+    // Validate required fields
+    if (!emailId || !mobileNumber || !dateofBirth || !investmentPreference) {
+      return res.status(400).json({msg: "All fields are required!"});
     }
 
+    // Trim whitespace from inputs
     emailId = emailId.trim();
     mobileNumber = mobileNumber.trim();
     dateofBirth = dateofBirth.trim();
     investmentPreference = investmentPreference.trim();
 
+    // Check for empty input fields
     if (
-      emailId == '' ||
-      mobileNumber == '' ||
-      dateofBirth == '' ||
-      investmentPreference == ''
+      emailId === "" ||
+      mobileNumber === "" ||
+      dateofBirth === "" ||
+      investmentPreference === ""
     ) {
-      return res.json({
-        success: false,
-        msg: 'Empty Input Fields!',
-      });
-    }
-    
-    if (!isValidEmail(emailId)) {
-      return res.json({
-        success: false,
-        msg: 'Invalid email entered',
-      });
-    }
-    
-    if (!isValidMobileNumber(mobileNumber)) {
-      return res.json({
-        success: false,
-        msg: 'Invalid mobile number entered',
-      });
-    }
-    
-    if (!isDateValid(dateofBirth)) {
-      return res.json({
-        success: false,
-        msg: 'Invalid dateofBirth entered',
-      });
+      return res.json({success: false, msg: "Empty Input Fields!"});
     }
 
-    const InvestorsIdToken = await prisma.Investor.update({
-      where: {
-        id,
-      },
+    // Validate email format
+    if (!isValidEmail(emailId)) {
+      return res.json({success: false, msg: "Invalid email entered"});
+    }
+
+    // Validate mobile number format
+    if (!isValidMobileNumber(mobileNumber)) {
+      return res.json({success: false, msg: "Invalid mobile number entered"});
+    }
+
+    // Validate date format
+    if (!isDateValid(dateofBirth)) {
+      return res.json({success: false, msg: "Invalid date of birth entered"});
+    }
+
+    // Update investor's profile in the database
+    const updatedInvestor = await prisma.Investor.update({
+      where: {id},
       data: {
         emailId,
         mobileNumber,
@@ -70,228 +60,220 @@ const updateInvestorPersonalProfile = asyncHandler(async (req, res) => {
         investmentPreference,
       },
     });
-    return res.json(InvestorsIdToken);
-    
+
+    // Return updated investor profile
+    return res.json(updatedInvestor);
   } catch (error) {
-    return res.status(500).json({ error: error });
+    // Handle server errors
+    return res.status(500).json({error});
   }
 });
 
+// Update investor's address profile handler
 const updateInvestorAddressProfileInfo = asyncHandler(async (req, res) => {
   try {
-    const { id } = req.investor;
-    let { addressOne, addressTwo, addressThree, pinCode, state, city } =
-      req.body;
+    const {id} = req.investor;
+    let {addressOne, addressTwo, addressThree, pinCode, state, city} = req.body;
 
+    // Validate required fields
     if (
-      !addressOne 
-      || !addressTwo 
-      || !addressThree 
-      || !pinCode 
-      || !state 
-      || !city 
+      !addressOne ||
+      !addressTwo ||
+      !addressThree ||
+      !pinCode ||
+      !state ||
+      !city
     ) {
-      return res.status(400).json({ msg: "All fields are required!"});
+      return res.status(400).json({msg: "All fields are required!"});
     }
+
+    // Trim whitespace from inputs
     addressOne = addressOne.trim();
     addressTwo = addressTwo.trim();
     addressThree = addressThree.trim();
     pinCode = pinCode.trim();
     state = state.trim();
     city = city.trim();
+
+    // Check for empty input fields
     if (
-      addressOne == '' ||
-      addressTwo == '' ||
-      addressThree == '' ||
-      pinCode == '' ||
-      state == '' ||
-      city == ''
+      addressOne === "" ||
+      addressTwo === "" ||
+      addressThree === "" ||
+      pinCode === "" ||
+      state === "" ||
+      city === ""
     ) {
-      res.json({
-        success: false,
-        msg: 'Empty Input Fields!',
-      });
-    } else {
-      const InvestorsIdToken = await prisma.Investor.update({
-        where: {
-          id,
-        }, 
-        data: {
-          addressOne,
-          addressTwo,
-          addressThree,
-          pinCode,
-          state,
-          city,
-        },
-      });
-      res.json(InvestorsIdToken);
+      return res.json({success: false, msg: "Empty Input Fields!"});
     }
+
+    // Update investor's address profile in the database
+    const updatedAddress = await prisma.Investor.update({
+      where: {id},
+      data: {addressOne, addressTwo, addressThree, pinCode, state, city},
+    });
+
+    // Return updated address profile
+    return res.json(updatedAddress);
   } catch (error) {
-    return res.status(500).json({ error: error });
+    // Handle server errors
+    return res.status(500).json({error});
   }
 });
 
+// Change investor's password handler
 const changeInvestorPassword = asyncHandler(async (req, res) => {
   try {
-    const { id } = req.investor;
-    let { formerPassword, newPassword, confirmNewPassword } = req.body;
+    const {id} = req.investor;
+    let {formerPassword, newPassword, confirmNewPassword} = req.body;
 
+    // Validate required fields
     if (!formerPassword || !newPassword || !confirmNewPassword) {
-      return res.status(400).json({ msg: "All fields are required!"});
+      return res.status(400).json({msg: "All fields are required!"});
     }
 
+    // Trim whitespace from inputs
     formerPassword = formerPassword.trim();
     newPassword = newPassword.trim();
     confirmNewPassword = confirmNewPassword.trim();
 
-    if (formerPassword == '' || newPassword == '' || confirmNewPassword == '') {
-      res.json({
-        success: false,
-        msg: 'Empty Input Fields!',
-      });
-    } else if (
+    // Check for empty input fields
+    if (
+      formerPassword === "" ||
+      newPassword === "" ||
+      confirmNewPassword === ""
+    ) {
+      return res.json({success: false, msg: "Empty Input Fields!"});
+    }
+
+    // Validate password format
+    if (
       !isPasswordValid(formerPassword) ||
       !isPasswordValid(newPassword) ||
       !isPasswordValid(confirmNewPassword)
     ) {
-      res.json({
-        success: false,
-        msg: 'Invalid password entered',
-      });
-    } else {
-      const newPasswordHash = await argon.hash(newPassword);
-
-      const formerPasswordOwnerExist = await prisma.Investor.findUnique({
-        where: {
-          id,
-        },
-      });
-
-      const pwMatches = await argon.verify(
-        formerPasswordOwnerExist.password,
-        formerPassword
-      );
-      if (!pwMatches) {
-        res.json({
-          success: false,
-          msg: 'formerPassword does not exist try to reset formerPassword before trying to change Password',
-        });
-      } else if (newPassword !== confirmNewPassword) {
-        res.json({
-          success: false,
-          msg: 'newPassword didnt match confirmNewPassword',
-        });
-      } else {
-        const InvestorswithPassword = await prisma.Investor.update({
-          where: {
-            id,
-          },
-          data: {
-            password: newPasswordHash,
-          },
-        });
-        res.json({
-          msg: 'Password Change successfully',
-          data: InvestorswithPassword,
-        });
-      }
+      return res.json({success: false, msg: "Invalid password entered"});
     }
+
+    // Hash new password
+    const newPasswordHash = await argon.hash(newPassword);
+
+    // Retrieve investor's current password hash from database
+    const investor = await prisma.Investor.findUnique({where: {id}});
+    const pwMatches = await argon.verify(investor.password, formerPassword);
+
+    // Verify former password
+    if (!pwMatches) {
+      return res.json({success: false, msg: "Former password does not match"});
+    }
+
+    // Check if new passwords match
+    if (newPassword !== confirmNewPassword) {
+      return res.json({success: false, msg: "New passwords do not match"});
+    }
+
+    // Update investor's password in the database
+    const updatedInvestor = await prisma.Investor.update({
+      where: {id},
+      data: {password: newPasswordHash},
+    });
+
+    // Return success message and updated investor data
+    return res.json({
+      msg: "Password changed successfully",
+      data: updatedInvestor,
+    });
   } catch (error) {
-    return res.status(500).json({ error: error });
+    // Handle server errors
+    return res.status(500).json({error});
   }
 });
 
+// Deactivate investor's account handler
 const deactivateInvestorAccount = asyncHandler(async (req, res) => {
   try {
-    const { id } = req.investor;
-    const { accountDeactivate } = req.body;
+    const {id} = req.investor;
+    const {accountDeactivate} = req.body;
+
+    // Check if account deactivation field is provided
     if (accountDeactivate === null) {
-      res.json({
-        success: false,
-        msg: 'Empty Input Fields!',
-      });
-    } else {
-      const deactivateAccount = await prisma.Investor.delete({
-        where: {
-          id,
-        },
-      });
-      res.json({
-        msg: 'Account Delete successfully By deactivating You',
-        note: 'By deactivating your Account you totally deleted your account and you cant login or do anything with this account',
-        data: deactivateAccount,
-      });
+      return res.json({success: false, msg: "Empty Input Fields!"});
     }
+
+    // Delete investor's account from database
+    const deletedAccount = await prisma.Investor.delete({
+      where: {id},
+    });
+
+    // Return success message and additional information
+    return res.json({
+      msg: "Account deleted successfully",
+      note: "By deactivating your account, it is permanently deleted and you cannot log in or use this account.",
+      data: deletedAccount,
+    });
   } catch (error) {
-    return res.status(500).json({ error: error });
+    // Handle server errors
+    return res.status(500).json({error});
   }
 });
 
+// Toggle investor's notification settings handler
 const TurnOnNotificationInvestorSettings = asyncHandler(async (req, res) => {
   try {
-    let text;
-    const { id } = req.investor;
-    const { receiveNotification } = req.body;
+    const {id} = req.investor;
+    const {receiveNotification} = req.body;
 
+    // Check if receiveNotification field is provided
     if (!receiveNotification) {
-      return res.status(400).json({ msg: "All fields are required!"});
+      return res.status(400).json({msg: "All fields are required!"});
     }
 
-    // console.log({receiveNotification});
-    const receiveNotificationBooleanValue =  /^true$/i.test(receiveNotification);
+    // Convert string input to boolean
+    const receiveNotificationBoolean = /^true$/i.test(receiveNotification);
+    const notificationStatus = receiveNotificationBoolean ? "on" : "off";
 
-    if (receiveNotificationBooleanValue === false) {
-      text = 'off';
-      console.log('This text', text);
-    } else if (receiveNotificationBooleanValue === true) {
-      text = 'on';
-      console.log('This text', text);
-    }
-
-    const turnOffNotification = await prisma.Investor.update({
-      where: {
-        id,
-      },
-      data: {
-        receiveNotification: receiveNotificationBooleanValue,
-      },
+    // Update investor's notification settings in database
+    const updatedNotificationSettings = await prisma.Investor.update({
+      where: {id},
+      data: {receiveNotification: receiveNotificationBoolean},
     });
 
-    // console.log(turnOffNotification);
+    // Return success message and updated notification settings
     return res.json({
-      msg: `Notification Turned ${text} successfully`,
-      data: turnOffNotification,
+      msg: `Notification turned ${notificationStatus} successfully`,
+      data: updatedNotificationSettings,
     });
-    
   } catch (error) {
-    return res.status(500).json({ error: error });
+    // Handle server errors
+    return res.status(500).json({error});
   }
 });
 
+// Get investor's profile details handler
 const getProfileDetails = asyncHandler(async (req, res) => {
   try {
-    const { id } = req.investor; 
+    const {id} = req.investor;
 
-    const getSingleTeamMember = await prisma.Investor.findUnique({
-      where: {
-        id,
-      },
-    });
-    let data = {
-      fullName: getSingleTeamMember.fullName,
-      emailId: getSingleTeamMember.emailId,
-      mobileNumber: getSingleTeamMember.mobileNumber,
-      dateofBirth: getSingleTeamMember.dateofBirth,
+    // Fetch investor's profile details from database
+    const investor = await prisma.Investor.findUnique({where: {id}});
+
+    // Extract necessary profile data
+    const data = {
+      fullName: investor.fullName,
+      emailId: investor.emailId,
+      mobileNumber: investor.mobileNumber,
+      dateofBirth: investor.dateofBirth,
     };
-    res.json({
-      data: data,
-    });
+
+    // Return profile data
+    return res.json({data});
   } catch (error) {
-    return res.status(500).json({ error: error });
+    // Handle server errors
+    return res.status(500).json({error});
   }
 });
 
+// Export all handlers for use in other parts of the application
 module.exports = {
   updateInvestorPersonalProfile,
   updateInvestorAddressProfileInfo,
